@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  name      String
+  role      Role     @default(STAFF)
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments Appointment[]
+  @@map("users")
+}
+
+model Customer {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName    String
+  lastName     String
+  email        String   @unique
+  phone        String
+  dateOfBirth  DateTime?
+  notes        String?
+  healthInfo   Json?    // アレルギー情報など
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  appointments Appointment[]
+  treatmentHistory TreatmentHistory[]
+
+  @@map("customers")
+}
+
+model Appointment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  date        DateTime
+  startTime   DateTime
+  endTime     DateTime
+  status      AppointmentStatus @default(SCHEDULED)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customerId  String   @db.ObjectId
+  customer    Customer @relation(fields: [customerId], references: [id])
+  
+  staffId     String   @db.ObjectId
+  staff       User     @relation(fields: [staffId], references: [id])
+
+  treatmentHistory TreatmentHistory?
+
+  @@map("appointments")
+}
+
+model TreatmentHistory {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  date        DateTime @default(now())
+  services    Json[]   // 施術内容の配列
+  products    Json[]   // 使用製品の配列
+  notes       String?
+  photos      String[] // 施術写真のURL配列
+  nextRecommendation String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customerId  String   @db.ObjectId
+  customer    Customer @relation(fields: [customerId], references: [id])
+
+  appointmentId String  @unique @db.ObjectId
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+
+  @@map("treatment_history")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
