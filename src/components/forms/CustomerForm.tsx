@@ -7,9 +7,10 @@ import { Customer } from '@prisma/client'
 
 type CustomerFormProps = {
   customer?: Partial<Customer>
+  isEditing?: boolean
 }
 
-export function CustomerForm({ customer }: CustomerFormProps) {
+export function CustomerForm({ customer, isEditing = false }: CustomerFormProps) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -31,8 +32,12 @@ export function CustomerForm({ customer }: CustomerFormProps) {
     }
 
     try {
-      const res = await fetch('/api/customers', {
-        method: 'POST',
+      const url = isEditing 
+        ? `/api/customers/${customer?.id}`
+        : '/api/customers'
+      
+      const res = await fetch(url, {
+        method: isEditing ? 'PUT' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -41,7 +46,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
 
       if (!res.ok) {
         const error = await res.json()
-        throw new Error(error.message || '顧客の登録に失敗しました')
+        throw new Error(error.message || '顧客情報の保存に失敗しました')
       }
 
       router.push('/customers')
@@ -73,7 +78,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             id="lastName"
             required
             defaultValue={customer?.lastName}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-800"
           />
         </div>
 
@@ -88,7 +93,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             id="firstName"
             required
             defaultValue={customer?.firstName}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-800"
           />
         </div>
 
@@ -103,7 +108,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             id="email"
             required
             defaultValue={customer?.email}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-800"
           />
         </div>
 
@@ -118,7 +123,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             id="phone"
             required
             defaultValue={customer?.phone}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-800"
           />
         </div>
 
@@ -132,7 +137,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             name="dateOfBirth"
             id="dateOfBirth"
             defaultValue={customer?.dateOfBirth?.toString().split('T')[0]}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-800"
           />
         </div>
       </div>
@@ -147,7 +152,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
           id="healthInfo"
           rows={3}
           defaultValue={customer?.healthInfo as string}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-800"
         />
       </div>
 
@@ -160,8 +165,8 @@ export function CustomerForm({ customer }: CustomerFormProps) {
           name="notes"
           id="notes"
           rows={3}
-          defaultValue={customer?.notes ?? ''}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          defaultValue={customer?.notes || ''}
+          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 text-gray-800"
         />
       </div>
 

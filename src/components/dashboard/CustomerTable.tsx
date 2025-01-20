@@ -7,17 +7,44 @@ import { ja } from 'date-fns/locale'
 import Link from 'next/link'
 import { Edit, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 type CustomerTableProps = {
   customers: Customer[]
 }
 
 export function CustomerTable({ customers }: CustomerTableProps) {
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const filteredCustomers = customers.filter((customer) =>
     `${customer.lastName}${customer.firstName}`.includes(searchTerm)
   )
+
+  const handleDelete = async (customerId: string) => {
+    if (!confirm('本当にこの顧客を削除しますか？この操作は取り消せません。')) {
+      return
+    }
+
+    try {
+      setDeletingId(customerId)
+      const res = await fetch(`/api/customers/${customerId}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error('削除に失敗しました')
+      }
+
+      router.refresh()
+    } catch (error) {
+      alert('顧客の削除に失敗しました')
+      console.error('Delete error:', error)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <div>
@@ -75,17 +102,14 @@ export function CustomerTable({ customers }: CustomerTableProps) {
                   <div className="flex space-x-2">
                     <Link
                       href={`/customers/${customer.id}/edit`}
-                      className="text-indigo-600 hover:text-indigo-900"
+                      className="text-indigo-600 hover:text-indigo-900 disabled:opacity-50"
                     >
                       <Edit className="h-5 w-5" />
                     </Link>
                     <button
-                      onClick={() => {
-                        if (confirm('本当にこの顧客を削除しますか？')) {
-                          // 削除処理を実装
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-900"
+                      onClick={() => handleDelete(customer.id)}
+                      disabled={deletingId === customer.id}
+                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
                     >
                       <Trash2 className="h-5 w-5" />
                     </button>
