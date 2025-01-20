@@ -70,7 +70,7 @@ export function AppointmentCalendar({
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <span className="font-medium">
+          <span className="font-medium text-gray-800">
             {format(weekStart, 'yyyy年M月d日', { locale: ja })} の週
           </span>
           <button
@@ -84,7 +84,7 @@ export function AppointmentCalendar({
         <select
           value={selectedStaffId}
           onChange={(e) => setSelectedStaffId(e.target.value)}
-          className="border rounded-md p-2"
+          className="border rounded-md p-2 text-gray-800"
         >
           <option value="all">全てのスタッフ</option>
           {staffMembers.map((staff) => (
@@ -100,11 +100,11 @@ export function AppointmentCalendar({
         <div className="min-w-[800px]">
           {/* 曜日ヘッダー */}
           <div className="grid grid-cols-8 bg-gray-50">
-            <div className="p-4 border-b border-r font-medium">時間</div>
+            <div className="p-4 border-b border-r font-medium text-gray-800">時間</div>
             {weekDays.map((date) => (
               <div
                 key={date.toString()}
-                className="p-4 border-b border-r font-medium text-center"
+                className="p-4 border-b border-r font-medium text-center text-gray-800"
               >
                 {format(date, 'M/d (E)', { locale: ja })}
               </div>
@@ -114,7 +114,7 @@ export function AppointmentCalendar({
           {/* タイムスロット */}
           {timeSlots.map((slot) => (
             <div key={slot.start.toString()} className="grid grid-cols-8">
-              <div className="p-4 border-b border-r text-sm">
+              <div className="p-4 border-b border-r text-sm text-gray-800">
                 {format(slot.start, 'HH:mm')}
               </div>
               {weekDays.map((date) => {
@@ -139,7 +139,7 @@ export function AppointmentCalendar({
                           return appointment ? (
                             <div
                               key={staff.id}
-                              className="text-xs p-1 bg-blue-100 rounded"
+                              className="text-xs p-1 bg-blue-100 rounded text-gray-800"
                             >
                               {staff.name}: {appointment.customer.lastName}{' '}
                               {appointment.customer.firstName}
@@ -151,7 +151,7 @@ export function AppointmentCalendar({
                       // 個別スタッフ表示モード
                       <button
                         onClick={() => onSlotSelect(slotDate, selectedStaffId)}
-                        className={`w-full h-full ${
+                        className={`w-full h-full text-gray-800 ${
                           isSlotBooked(slotDate, selectedStaffId)
                             ? 'bg-blue-100'
                             : 'hover:bg-gray-50'

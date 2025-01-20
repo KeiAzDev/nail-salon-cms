@@ -55,7 +55,7 @@ export function CustomerTable({ customers }: CustomerTableProps) {
           placeholder="顧客名で検索..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full max-w-xs px-4 py-2 border rounded-md"
+          className="w-full max-w-xs px-4 py-2 border rounded-md text-gray-800"
         />
       </div>
 
