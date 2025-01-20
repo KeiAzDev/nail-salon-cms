@@ -1,9 +1,13 @@
-// src/types/appointment.ts
 import { Appointment, User } from '@prisma/client'
 
 export type AppointmentWithDetails = Appointment & {
-  staff: User
+  staff: {
+    id: string
+    name: string
+    email: string
+  }
   customer: {
+    id: string
     firstName: string
     lastName: string
     email: string

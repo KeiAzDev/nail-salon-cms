@@ -6,19 +6,9 @@ import { format, addDays, startOfWeek, eachDayOfInterval } from 'date-fns'
 import { ja } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { generateTimeSlots, BUSINESS_HOURS } from '@/lib/constants/appointment'
-import { Appointment, User } from '@prisma/client'
-import { AppointmentDetailModal } from './AppointmentDetailModal'
+import { User } from '@prisma/client'
 import { AppointmentWithDetails } from '@/types/appointment'
-
-type AppointmentWithStaff = Appointment & {
-  staff: User
-  customer: {
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-  }
-}
+import { AppointmentDetailModal } from './AppointmentDetailModal'
 
 interface AppointmentCalendarProps {
   appointments: AppointmentWithDetails[]
@@ -46,25 +36,23 @@ export function AppointmentCalendar({
   const timeSlots = generateTimeSlots(selectedDate)
 
   // 予約枠の状態を確認
-  const isSlotBooked = (date: Date, staffId: string) => {
-    return appointments.some(
-      (apt) =>
-        apt.staffId === staffId &&
-        format(new Date(apt.startTime), 'yyyy-MM-dd HH:mm') ===
-          format(date, 'yyyy-MM-dd HH:mm')
-    )
+  const isSlotBooked = (date: Date, staffId: string): boolean => {
+    const targetTime = format(date, 'yyyy-MM-dd HH:mm')
+    return appointments.some((apt) => {
+      const appointmentTime = format(new Date(apt.startTime), 'yyyy-MM-dd HH:mm')
+      return apt.staffId === staffId && appointmentTime === targetTime
+    })
   }
 
-  const getAppointmentForSlot = (date: Date, staffId: string) => {
-    return appointments.find(
-      (apt) =>
-        apt.staffId === staffId &&
-        format(new Date(apt.startTime), 'yyyy-MM-dd HH:mm') ===
-          format(date, 'yyyy-MM-dd HH:mm')
-    )
+  const getAppointmentForSlot = (date: Date, staffId: string): AppointmentWithDetails | undefined => {
+    const targetTime = format(date, 'yyyy-MM-dd HH:mm')
+    return appointments.find((apt) => {
+      const appointmentTime = format(new Date(apt.startTime), 'yyyy-MM-dd HH:mm')
+      return apt.staffId === staffId && appointmentTime === targetTime
+    })
   }
 
-  // ステータス変更のハンドラー
+  // 予約のステータス変更ハンドラー
   const handleStatusChange = async (appointmentId: string, newStatus: string) => {
     try {
       const res = await fetch(`/api/appointments/${appointmentId}/status`, {
@@ -78,8 +66,6 @@ export function AppointmentCalendar({
       if (!res.ok) {
         throw new Error('ステータスの更新に失敗しました')
       }
-
-      // TODO: 予約一覧を更新する処理
     } catch (error) {
       console.error('Status update error:', error)
       alert('ステータスの更新に失敗しました')
@@ -87,7 +73,7 @@ export function AppointmentCalendar({
   }
 
   // 予約表示用の関数
-  const renderAppointment = (appointment: AppointmentWithStaff) => {
+  const renderAppointment = (appointment: AppointmentWithDetails) => {
     const statusColors = {
       SCHEDULED: 'bg-blue-100',
       CONFIRMED: 'bg-green-100',
@@ -95,14 +81,18 @@ export function AppointmentCalendar({
       COMPLETED: 'bg-gray-100',
     }
 
+    const customerName = appointment.customer 
+      ? `${appointment.customer.lastName} ${appointment.customer.firstName}`
+      : '顧客情報なし'
+
     return (
       <button
         onClick={() => setSelectedAppointment(appointment)}
-        className={`w-full text-left p-1 rounded text-xs ${
+        className={`w-full text-left p-1 rounded text-xs text-gray-800 ${
           statusColors[appointment.status as keyof typeof statusColors]
         }`}
       >
-        {`${appointment.customer.lastName} ${appointment.customer.firstName}`}
+        {customerName}
       </button>
     )
   }
@@ -196,7 +186,10 @@ export function AppointmentCalendar({
                         // 個別スタッフ表示モード
                         <div>
                           {isSlotBooked(slotDate, selectedStaffId) ? (
-                            renderAppointment(getAppointmentForSlot(slotDate, selectedStaffId)!)
+                            (() => {
+                              const appointment = getAppointmentForSlot(slotDate, selectedStaffId)
+                              return appointment ? renderAppointment(appointment) : null
+                            })()
                           ) : (
                             <button
                               onClick={() => onSlotSelect(slotDate, selectedStaffId)}

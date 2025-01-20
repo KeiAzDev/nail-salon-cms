@@ -45,15 +45,16 @@ model Customer {
 }
 
 model Appointment {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  date        DateTime
-  startTime   DateTime
-  endTime     DateTime
-  status      AppointmentStatus @default(SCHEDULED)
-  notes       String?
-  services    Json?    // メニューIDの配列を保存
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  date          DateTime
+  startTime     DateTime
+  endTime       DateTime
+  status        AppointmentStatus @default(SCHEDULED)
+  notes         String?
+  services      Json?
+  googleEventId String?          // Google Calendar Event ID
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   customerId  String   @db.ObjectId
   customer    Customer @relation(fields: [customerId], references: [id])

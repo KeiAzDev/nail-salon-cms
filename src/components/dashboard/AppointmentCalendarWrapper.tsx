@@ -3,17 +3,9 @@
 
 import { useState } from 'react'
 import { AppointmentCalendar } from './AppointmentCalendar'
-import { Appointment, User } from '@prisma/client'
-
-type AppointmentWithDetails = Appointment & {
-  staff: User
-  customer: {
-    firstName: string
-    lastName: string
-    email: string
-    phone: string
-  }
-}
+import { useRouter } from 'next/navigation'
+import { User } from '@prisma/client'
+import { AppointmentWithDetails } from '@/types/appointment'
 
 interface AppointmentCalendarWrapperProps {
   initialAppointments: AppointmentWithDetails[]
@@ -24,12 +16,12 @@ export function AppointmentCalendarWrapper({
   initialAppointments,
   initialStaffMembers,
 }: AppointmentCalendarWrapperProps) {
-  const [appointments] = useState<AppointmentWithDetails[]>(initialAppointments)
+  const [appointments, setAppointments] = useState<AppointmentWithDetails[]>(initialAppointments)
   const [staffMembers] = useState<User[]>(initialStaffMembers)
+  const router = useRouter()
 
   const handleSlotSelect = async (date: Date, staffId: string) => {
     console.log('Selected slot:', { date, staffId })
-    // ここに予約作成のロジックを実装
   }
 
   return (
