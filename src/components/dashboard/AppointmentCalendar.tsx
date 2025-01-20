@@ -7,17 +7,21 @@ import { ja } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { generateTimeSlots, BUSINESS_HOURS } from '@/lib/constants/appointment'
 import { Appointment, User } from '@prisma/client'
+import { AppointmentDetailModal } from './AppointmentDetailModal'
+import { AppointmentWithDetails } from '@/types/appointment'
 
 type AppointmentWithStaff = Appointment & {
   staff: User
   customer: {
     firstName: string
     lastName: string
+    email: string
+    phone: string
   }
 }
 
 interface AppointmentCalendarProps {
-  appointments: AppointmentWithStaff[]
+  appointments: AppointmentWithDetails[]
   staffMembers: User[]
   onSlotSelect: (date: Date, staffId: string) => void
 }
@@ -29,6 +33,7 @@ export function AppointmentCalendar({
 }: AppointmentCalendarProps) {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedStaffId, setSelectedStaffId] = useState<string | 'all'>('all')
+  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithDetails | null>(null)
 
   // 週の日付を生成
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 })
@@ -59,114 +64,164 @@ export function AppointmentCalendar({
     )
   }
 
-  return (
-    <div className="bg-white rounded-lg shadow">
-      {/* カレンダーヘッダー */}
-      <div className="p-4 border-b flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setSelectedDate(addDays(selectedDate, -7))}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <span className="font-medium text-gray-800">
-            {format(weekStart, 'yyyy年M月d日', { locale: ja })} の週
-          </span>
-          <button
-            onClick={() => setSelectedDate(addDays(selectedDate, 7))}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-        
-        <select
-          value={selectedStaffId}
-          onChange={(e) => setSelectedStaffId(e.target.value)}
-          className="border rounded-md p-2 text-gray-800"
-        >
-          <option value="all">全てのスタッフ</option>
-          {staffMembers.map((staff) => (
-            <option key={staff.id} value={staff.id}>
-              {staff.name}
-            </option>
-          ))}
-        </select>
-      </div>
+  // ステータス変更のハンドラー
+  const handleStatusChange = async (appointmentId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/appointments/${appointmentId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
 
-      {/* カレンダーグリッド */}
-      <div className="overflow-x-auto">
-        <div className="min-w-[800px]">
-          {/* 曜日ヘッダー */}
-          <div className="grid grid-cols-8 bg-gray-50">
-            <div className="p-4 border-b border-r font-medium text-gray-800">時間</div>
-            {weekDays.map((date) => (
-              <div
-                key={date.toString()}
-                className="p-4 border-b border-r font-medium text-center text-gray-800"
-              >
-                {format(date, 'M/d (E)', { locale: ja })}
+      if (!res.ok) {
+        throw new Error('ステータスの更新に失敗しました')
+      }
+
+      // TODO: 予約一覧を更新する処理
+    } catch (error) {
+      console.error('Status update error:', error)
+      alert('ステータスの更新に失敗しました')
+    }
+  }
+
+  // 予約表示用の関数
+  const renderAppointment = (appointment: AppointmentWithStaff) => {
+    const statusColors = {
+      SCHEDULED: 'bg-blue-100',
+      CONFIRMED: 'bg-green-100',
+      CANCELLED: 'bg-red-100',
+      COMPLETED: 'bg-gray-100',
+    }
+
+    return (
+      <button
+        onClick={() => setSelectedAppointment(appointment)}
+        className={`w-full text-left p-1 rounded text-xs ${
+          statusColors[appointment.status as keyof typeof statusColors]
+        }`}
+      >
+        {`${appointment.customer.lastName} ${appointment.customer.firstName}`}
+      </button>
+    )
+  }
+
+  return (
+    <>
+      <div className="bg-white rounded-lg shadow">
+        {/* カレンダーヘッダー */}
+        <div className="p-4 border-b flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setSelectedDate(addDays(selectedDate, -7))}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <span className="font-medium text-gray-800">
+              {format(weekStart, 'yyyy年M月d日', { locale: ja })} の週
+            </span>
+            <button
+              onClick={() => setSelectedDate(addDays(selectedDate, 7))}
+              className="p-2 hover:bg-gray-100 rounded-full"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <select
+            value={selectedStaffId}
+            onChange={(e) => setSelectedStaffId(e.target.value)}
+            className="border rounded-md p-2 text-gray-800"
+          >
+            <option value="all">全てのスタッフ</option>
+            {staffMembers.map((staff) => (
+              <option key={staff.id} value={staff.id}>
+                {staff.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* カレンダーグリッド */}
+        <div className="overflow-x-auto">
+          <div className="min-w-[800px]">
+            {/* 曜日ヘッダー */}
+            <div className="grid grid-cols-8 bg-gray-50">
+              <div className="p-4 border-b border-r font-medium text-gray-800">時間</div>
+              {weekDays.map((date) => (
+                <div
+                  key={date.toString()}
+                  className="p-4 border-b border-r font-medium text-center text-gray-800"
+                >
+                  {format(date, 'M/d (E)', { locale: ja })}
+                </div>
+              ))}
+            </div>
+
+            {/* タイムスロット */}
+            {timeSlots.map((slot) => (
+              <div key={slot.start.toString()} className="grid grid-cols-8">
+                <div className="p-4 border-b border-r text-sm text-gray-800">
+                  {format(slot.start, 'HH:mm')}
+                </div>
+                {weekDays.map((date) => {
+                  const slotDate = new Date(
+                    date.getFullYear(),
+                    date.getMonth(),
+                    date.getDate(),
+                    slot.start.getHours(),
+                    slot.start.getMinutes()
+                  )
+
+                  return (
+                    <div
+                      key={date.toString()}
+                      className="p-2 border-b border-r min-h-[60px]"
+                    >
+                      {selectedStaffId === 'all' ? (
+                        // 全スタッフ表示モード
+                        <div className="space-y-1">
+                          {staffMembers.map((staff) => {
+                            const appointment = getAppointmentForSlot(slotDate, staff.id)
+                            return appointment ? (
+                              <div key={staff.id}>
+                                {renderAppointment(appointment)}
+                              </div>
+                            ) : null
+                          })}
+                        </div>
+                      ) : (
+                        // 個別スタッフ表示モード
+                        <div>
+                          {isSlotBooked(slotDate, selectedStaffId) ? (
+                            renderAppointment(getAppointmentForSlot(slotDate, selectedStaffId)!)
+                          ) : (
+                            <button
+                              onClick={() => onSlotSelect(slotDate, selectedStaffId)}
+                              className="w-full h-full text-gray-800 hover:bg-gray-50"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             ))}
           </div>
-
-          {/* タイムスロット */}
-          {timeSlots.map((slot) => (
-            <div key={slot.start.toString()} className="grid grid-cols-8">
-              <div className="p-4 border-b border-r text-sm text-gray-800">
-                {format(slot.start, 'HH:mm')}
-              </div>
-              {weekDays.map((date) => {
-                const slotDate = new Date(
-                  date.getFullYear(),
-                  date.getMonth(),
-                  date.getDate(),
-                  slot.start.getHours(),
-                  slot.start.getMinutes()
-                )
-
-                return (
-                  <div
-                    key={date.toString()}
-                    className="p-2 border-b border-r min-h-[60px]"
-                  >
-                    {selectedStaffId === 'all' ? (
-                      // 全スタッフ表示モード
-                      <div className="space-y-1">
-                        {staffMembers.map((staff) => {
-                          const appointment = getAppointmentForSlot(slotDate, staff.id)
-                          return appointment ? (
-                            <div
-                              key={staff.id}
-                              className="text-xs p-1 bg-blue-100 rounded text-gray-800"
-                            >
-                              {staff.name}: {appointment.customer.lastName}{' '}
-                              {appointment.customer.firstName}
-                            </div>
-                          ) : null
-                        })}
-                      </div>
-                    ) : (
-                      // 個別スタッフ表示モード
-                      <button
-                        onClick={() => onSlotSelect(slotDate, selectedStaffId)}
-                        className={`w-full h-full text-gray-800 ${
-                          isSlotBooked(slotDate, selectedStaffId)
-                            ? 'bg-blue-100'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        {getAppointmentForSlot(slotDate, selectedStaffId)?.customer.lastName}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          ))}
         </div>
       </div>
-    </div>
+
+      {/* 予約詳細モーダル */}
+      {selectedAppointment && (
+        <AppointmentDetailModal
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onStatusChange={handleStatusChange}
+        />
+      )}
+    </>
   )
 }

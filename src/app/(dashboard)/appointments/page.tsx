@@ -32,6 +32,8 @@ export default async function AppointmentsPage() {
         select: {
           firstName: true,
           lastName: true,
+          email: true,
+          phone: true,
         },
       },
     },
