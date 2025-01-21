@@ -209,12 +209,11 @@ export function AppointmentCalendar({
 
       {/* 予約詳細モーダル */}
       {selectedAppointment && (
-        <AppointmentDetailModal
-          appointment={selectedAppointment}
-          onClose={() => setSelectedAppointment(null)}
-          onStatusChange={handleStatusChange}
-        />
-      )}
+  <AppointmentDetailModal
+    appointment={selectedAppointment}
+    onClose={() => setSelectedAppointment(null)}
+  />
+)}
     </>
   )
 }

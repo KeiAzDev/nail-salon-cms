@@ -82,3 +82,16 @@ export const addToGoogleCalendar = async (appointment: {
     throw new Error('Failed to add event to Google Calendar')
   }
 }
+
+export async function deleteFromGoogleCalendar(eventId: string) {
+  try {
+    const calendar = getGoogleCalendarClient()
+    await calendar.events.delete({
+      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      eventId: eventId,
+    })
+  } catch (error) {
+    console.error('Google Calendar deletion error:', error)
+    throw new Error('Failed to delete event from Google Calendar')
+  }
+}

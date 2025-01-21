@@ -1,4 +1,7 @@
+// src/types/appointment.ts
 import { Appointment, User } from '@prisma/client'
+
+export type AppointmentStatus = 'SCHEDULED' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED'
 
 export type AppointmentWithDetails = Appointment & {
   staff: {
