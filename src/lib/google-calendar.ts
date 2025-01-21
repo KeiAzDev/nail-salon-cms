@@ -4,86 +4,61 @@ import { JWT } from 'google-auth-library'
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-// 秘密鍵の処理を改善
-const getPrivateKey = () => {
-  const key = process.env.GOOGLE_PRIVATE_KEY
-  if (!key) throw new Error('GOOGLE_PRIVATE_KEY is not set')
-  
-  // 秘密鍵の形式を確認し、必要に応じて修正
-  if (key.includes('\\n')) {
-    return key.replace(/\\n/g, '\n')
-  }
-  return key
+const getGoogleCalendarClient = () => {
+  const auth = new JWT({
+    email: process.env.GOOGLE_CLIENT_EMAIL,
+    key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    scopes: SCOPES,
+  })
+
+  return google.calendar({ version: 'v3', auth })
 }
 
-const credentials = {
-  client_email: process.env.GOOGLE_CLIENT_EMAIL,
-  private_key: getPrivateKey(),
-  calendar_id: process.env.GOOGLE_CALENDAR_ID,
-}
-
-export const getGoogleCalendarClient = () => {
-  if (!credentials.client_email || !credentials.private_key || !credentials.calendar_id) {
-    throw new Error('Missing required Google Calendar credentials')
-  }
-
-  try {
-    const auth = new JWT({
-      email: credentials.client_email,
-      key: credentials.private_key,
-      scopes: SCOPES,
-    })
-
-    return google.calendar({ version: 'v3', auth })
-  } catch (error) {
-    console.error('Google Calendar client creation error:', error)
-    throw error
-  }
-}
-
-export const addToGoogleCalendar = async (appointment: {
+interface EventOptions {
   startTime: Date
   endTime: Date
   customerName: string
   staffName: string
   services: string[]
-}) => {
+  status?: string
+}
+
+export const updateGoogleCalendarEvent = async (
+  eventId: string,
+  options: EventOptions
+) => {
   try {
     const calendar = getGoogleCalendarClient()
 
     const event = {
-      summary: `${appointment.customerName}様 - ネイル予約`,
-      description: `担当: ${appointment.staffName}\nメニュー: ${appointment.services.join(
+      summary: `${options.customerName}様 - ネイル予約`,
+      description: `担当: ${options.staffName}\nメニュー: ${options.services.join(
         ', '
-      )}`,
+      )}${options.status ? `\nステータス: ${options.status}` : ''}`,
       start: {
-        dateTime: appointment.startTime.toISOString(),
+        dateTime: options.startTime.toISOString(),
         timeZone: 'Asia/Tokyo',
       },
       end: {
-        dateTime: appointment.endTime.toISOString(),
+        dateTime: options.endTime.toISOString(),
         timeZone: 'Asia/Tokyo',
       },
     }
 
-    console.log('Creating calendar event with:', {
-      calendarId: credentials.calendar_id,
-      event,
-    })
-
-    const response = await calendar.events.insert({
-      calendarId: credentials.calendar_id,
+    const response = await calendar.events.update({
+      calendarId: process.env.GOOGLE_CALENDAR_ID,
+      eventId: eventId,
       requestBody: event,
     })
 
     return response.data
   } catch (error) {
-    console.error('Google Calendar error:', error)
-    throw new Error('Failed to add event to Google Calendar')
+    console.error('Google Calendar update error:', error)
+    throw new Error('Failed to update event in Google Calendar')
   }
 }
 
-export async function deleteFromGoogleCalendar(eventId: string) {
+export const deleteFromGoogleCalendar = async (eventId: string) => {
   try {
     const calendar = getGoogleCalendarClient()
     await calendar.events.delete({
